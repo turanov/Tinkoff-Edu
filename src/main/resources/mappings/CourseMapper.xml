@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.tinkoff.fintech.dao.CourseRepository">
+
+    <insert id="save" parameterType="ru.tinkoff.fintech.model.Course">
+        INSERT INTO courses (id, title, description, required_grade)
+        VALUES (#{id}, #{title}, #{description}, #{required_grade});
+
+        <if test="students!=null">
+            <foreach collection="students" item="student">
+                INSERT INTO students_courses(student_id, course_id)
+                VALUES(#{student.id}, #{id});
+            </foreach>
+        </if>
+    </insert>
+
+    <insert id="addStudent" parameterType="map">
+        INSERT INTO students_courses(student_id, course_id)
+        VALUES (#{student.id}, #{id});
+    </insert>
+
+    <select id="findAll" resultMap="CourseMap">
+        SELECT *
+        FROM courses
+                 INNER JOIN
+             students_courses
+             on
+                 courses.id = students_courses.course_id
+                 INNER JOIN
+             students
+             on
+                 students.id = students_courses.student_id
+    </select>
+
+    <resultMap id="CourseMap" type="ru.tinkoff.fintech.model.Course">
+        <result property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="required_grade" column="required_grade"/>
+        <collection property="students" ofType="ru.tinkoff.fintech.model.Student">
+            <result property="id" column="student_id"/>
+            <result property="name" column="name"/>
+            <result property="age" column="age"/>
+            <result property="time_from" column="time_from"/>
+            <result property="time_to" column="time_to"/>
+            <result property="grade" column="grade"/>
+        </collection>
+    </resultMap>
+
+    <select id="findById" resultMap="CourseMap">
+        SELECT *
+        FROM courses
+        WHERE courses.id = #{id}
+    </select>
+
+    <delete id="deleteById" parameterType="int">
+        DELETE
+        FROM courses
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteAll">
+        DELETE
+        FROM courses;
+    </delete>
+
+    <update id="updateById" parameterType="ru.tinkoff.fintech.model.Course">
+        UPDATE courses
+        SET title = #{title},
+        description = #{description},
+        required_grade = #{required_grade}
+        WHERE id = ${id};
+
+        DELETE FROM students_courses
+        WHERE course_id = #{id};
+
+        <foreach collection="students" item="student">
+            INSERT INTO students_courses(student_id, course_id)
+            VALUES(#{student.id}, #{id});
+        </foreach>
+    </update>
+
+    <select id="findTheCourseWithTheHighestAverageAgeOfStudents" resultMap="CourseMap">
+        SELECT courses.id, courses.title, courses.description, courses.required_grade
+        FROM courses
+                 INNER JOIN
+             students_courses
+             on
+                 courses.id = students_courses.course_id
+                 INNER JOIN
+             students
+             on
+                 students.id = students_courses.student_id
+        GROUP BY courses.id
+        ORDER BY AVG(students.age) DESC LIMIT 1;
+    </select>
+
+</mapper>
