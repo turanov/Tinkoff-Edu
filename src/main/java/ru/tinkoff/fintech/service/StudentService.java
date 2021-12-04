@@ -2,12 +2,14 @@ package ru.tinkoff.fintech.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import ru.tinkoff.fintech.annotation.ConditionStudent;
 import ru.tinkoff.fintech.annotation.CountStudents;
 import ru.tinkoff.fintech.dao.StudentRepository;
 import ru.tinkoff.fintech.model.Student;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,7 @@ public class StudentService {
 
     private final StudentRepository repository;
 
+    @ConditionStudent
     public void save(Student student) {
         repository.save(student);
     }
@@ -32,16 +35,23 @@ public class StudentService {
         return repository.findAll();
     }
 
-    public void deleteById(int id) {
-        if (repository.findById(id).isEmpty())
+    @ConditionStudent
+    public Student deleteById(int id) {
+        Optional<Student> student = repository.findById(id);
+        if (student.isEmpty())
             throw STUDENT_NOT_FOUND.exception("error");
         repository.deleteById(id);
+        return student.get();
     }
 
-    public void deleteAll() {
+    @ConditionStudent
+    public List<Student> deleteAll() {
+        List<Student> students = repository.findAll();
         repository.deleteAll();
+        return students;
     }
 
+    @ConditionStudent
     public void update(Student student) {
         if (repository.findById(student.getId()).isEmpty())
             throw STUDENT_NOT_FOUND.exception("error");
